@@ -1,80 +1,120 @@
 #!/bin/bash
 
+# Kiểm tra quyền root
+if [[ $EUID -ne 0 ]]; then
+    echo "[!] Vui lòng chạy script với quyền root (sudo)"
+    exit 1
+fi
 
-# Check if curl is installed
+echo "[*] Kiểm tra curl..."
 if ! command -v curl >/dev/null 2>&1; then
-    echo "curl is not installed, installing..."
+    echo "[+] curl chưa được cài, đang tiến hành cài đặt..."
     sudo apt-get update
     sudo apt-get install -y curl
 else
-    echo "curl is already installed."
+    echo "[✓] curl đã được cài."
 fi
 
-# Check if Java JDK 21 is installed
+# Cài Java JDK 21 nếu chưa có
 if ! command -v javac >/dev/null 2>&1; then
-    echo "Java JDK 21 is not installed, installing"
-    mkdir -p /usr/local/java
+    echo "[+] Đang cài đặt Java JDK 21..."
     mkdir -p /usr/local/java/jdk21
     curl -L https://download.oracle.com/java/21/archive/jdk-21_linux-x64_bin.tar.gz -o jdk21.tar.gz
     tar -xf jdk21.tar.gz -C /usr/local/java/jdk21 --strip-components=1
     rm jdk21.tar.gz
-    echo "export JAVA_HOME=/usr/local/java/jdk21" | sudo tee -a /etc/environment
-    echo "export PATH=$PATH:$JAVA_HOME/bin" | sudo tee -a /etc/environment   #by @ricardev2023
-    sudo update-alternatives --install /usr/bin/java java /usr/local/java/jdk21/bin/java 1
-    sudo update-alternatives --install /usr/bin/javac javac /usr/local/java/jdk21/bin/javac 1
+
+    echo "export JAVA_HOME=/usr/local/java/jdk21" | tee -a /etc/environment
+    echo 'export PATH=$PATH:$JAVA_HOME/bin' | tee -a /etc/environment
+
     export JAVA_HOME=/usr/local/java/jdk21
     export PATH=$PATH:$JAVA_HOME/bin
-    echo "Java JDK 21 downloaded and installed successfully"
-fi
 
-# Check if Java JRE 8 is installed
-if ! command -v java >/dev/null 2>&1; then
-    jre8_url=https://javadl.oracle.com/webapps/download/AutoDL?BundleId=247938_0ae14417abb444ebb02b9815e2103550
-    sudo mkdir -p /usr/local/java/jre8
-    sudo curl -L -o /usr/local/java/jre8/jre8.tar.gz $jre8_url
-    sudo tar -xzf /usr/local/java/jre8/jre8.tar.gz -C /usr/local/java/jre8
-    sudo rm /usr/local/java/jre8/jre8.tar.gz
-    sudo update-alternatives --install /usr/bin/java java /usr/local/java/jre8/jre1.8.0_361/bin/java 1
-    sudo update-alternatives --install /usr/bin/javac javac /usr/local/java/jre8/jre1.8.0_361/bin/javac 1
-    sudo update-alternatives --set java /usr/local/java/jre8/jre1.8.0_361/bin/java 1
-    sudo update-alternatives --set javac /usr/local/java/jre8/jre1.8.0_361/bin/javac 1
-    echo "Java JRE 8 downloaded and installed successfully"
-fi
+    update-alternatives --install /usr/bin/java java /usr/local/java/jdk21/bin/java 1
+    update-alternatives --install /usr/bin/javac javac /usr/local/java/jdk21/bin/javac 1
 
-
-if [[ $EUID -eq 0 ]]; then
-    # Download Burp Suite Profesional Latet Version
-    echo 'Downloading Burp Suite Professional ....'
-    mkdir -p /usr/share/burpsuite
-    cp loader.jar /usr/share/burpsuite/
-    cp burp_suite.ico /usr/share/burpsuite/
-    cd /usr/share/burpsuite/
-    html=$(curl -s https://portswigger.net/burp/releases)
-    version=$(echo $html | grep -Po '(?<=/burp/releases/professional-community-)[0-9]+\-[0-9]+\-[0-9]+' | head -n 1)
-    Link="https://portswigger-cdn.net/burp/releases/download?product=pro&version=&type=jar"
-    echo $version
-    wget "$Link" -O burpsuite_pro_v$version.jar --quiet --show-progress
-    sleep 2
-    
-    # Execute Burp Suite Professional with Keyloader
-    echo 'Executing Burp Suite Professional with Keyloader'
-    echo "java --add-opens=java.desktop/javax.swing=ALL-UNNAMED--add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/jdk.internal.org.objectweb.asm=ALL-UNNAMED --add-opens=java.base/jdk.internal.org.objectweb.asm.tree=ALL-UNNAMED --add-opens=java.base/jdk.internal.org.objectweb.asm.Opcodes=ALL-UNNAMED -javaagent:$(pwd)/loader.jar -noverify -jar $(pwd)/burpsuite_pro_v$version.jar &" > burpsuite
-    echo "wait" >> burpsuite
-    chmod +x burpsuite
-    cp burpsuite /bin/burpsuite
-    echo "run command burpsuite to use"
-    echo "java -jar /usr/share/burpsuite/loader.jar" > burploader
-    chmod +x burploader
-    cp burploader /bin/burploader
-    echo "run command burploader to get key"
-
-    # execute Keygenerator
-    echo 'Starting Keygenerator'
-    (java -jar loader.jar) &
-    sleep 3s
-    (./burpsuite)
+    echo "[✓] Đã cài đặt Java JDK 21."
 else
-    echo "Execute Command as Root User"
-    exit
+    echo "[✓] Java JDK đã có sẵn."
 fi
 
+# Cài Java JRE 8 nếu cần (nếu java chưa có)
+if ! java -version 2>&1 | grep -q "1.8.0"; then
+    echo "[+] Đang cài đặt Java JRE 8..."
+    JRE_DIR=/usr/local/java/jre8
+    mkdir -p $JRE_DIR
+
+    jre8_url="https://javadl.oracle.com/webapps/download/AutoDL?BundleId=247938_0ae14417abb444ebb02b9815e2103550"
+    curl -L -o $JRE_DIR/jre8.tar.gz "$jre8_url"
+    tar -xzf $JRE_DIR/jre8.tar.gz -C $JRE_DIR
+    rm $JRE_DIR/jre8.tar.gz
+
+    update-alternatives --install /usr/bin/java java $JRE_DIR/jre1.8.0_361/bin/java 1
+    update-alternatives --install /usr/bin/javac javac $JRE_DIR/jre1.8.0_361/bin/javac 1
+    update-alternatives --set java $JRE_DIR/jre1.8.0_361/bin/java
+    update-alternatives --set javac $JRE_DIR/jre1.8.0_361/bin/javac
+
+    echo "[✓] Đã cài đặt Java JRE 8."
+fi
+
+# Thiết lập thư mục và icon
+echo "[*] Thiết lập thư mục và icon Burp Suite..."
+mkdir -p /usr/share/burpsuite
+cp loader.jar /usr/share/burpsuite/
+cp burpsuitepro.png /usr/share/burpsuite/
+
+# Tạo file burpsuite.desktop
+echo "[*] Tạo shortcut Burp Suite..."
+cat <<EOF > ~/.local/share/applications/burpsuite.desktop
+[Desktop Entry]
+Version=1.0
+Name=Burp Suite Professional
+Comment=Launch Burp Suite
+Exec=/bin/burpsuite
+Icon=/usr/share/burpsuite/burpsuitepro.png
+Terminal=false
+Type=Application
+Categories=Development;Security;
+EOF
+
+chmod +x ~/.local/share/applications/burpsuite.desktop
+xdg-desktop-menu forceupdate
+
+# Tải bản mới nhất của Burp Suite
+echo "[*] Đang tải bản mới nhất của Burp Suite..."
+cd /usr/share/burpsuite/
+html=$(curl -s https://portswigger.net/burp/releases)
+version=$(echo "$html" | grep -Po '(?<=/burp/releases/professional-community-)[0-9]+\-[0-9]+\-[0-9]+' | head -n 1)
+download_url="https://portswigger-cdn.net/burp/releases/download?product=pro&version=&type=jar"
+
+echo "[*] Phiên bản mới nhất: $version"
+wget "$download_url" -O "burpsuite_pro_v$version.jar" --quiet --show-progress
+sleep 2
+
+# Tạo script khởi chạy burpsuite
+echo "[*] Tạo lệnh burpsuite..."
+cat <<EOF > /usr/share/burpsuite/burpsuite
+#!/bin/bash
+java --add-opens=java.desktop/javax.swing=ALL-UNNAMED \
+     --add-opens=java.base/java.lang=ALL-UNNAMED \
+     --add-opens=java.base/jdk.internal.org.objectweb.asm=ALL-UNNAMED \
+     --add-opens=java.base/jdk.internal.org.objectweb.asm.tree=ALL-UNNAMED \
+     --add-opens=java.base/jdk.internal.org.objectweb.asm.Opcodes=ALL-UNNAMED \
+     -javaagent:$(pwd)/loader.jar -noverify -jar $(pwd)/burpsuite_pro_v$version.jar &
+wait
+EOF
+
+chmod +x /usr/share/burpsuite/burpsuite
+cp /usr/share/burpsuite/burpsuite /bin/burpsuite
+
+# Tạo keygen
+echo "[*] Tạo lệnh burploader (Keygen)..."
+echo "java -jar /usr/share/burpsuite/loader.jar" > /usr/bin/burploader
+chmod +x /usr/bin/burploader
+
+# Khởi động keygen + burpsuite
+echo "[*] Khởi động keygen và Burp Suite..."
+(java -jar /usr/share/burpsuite/loader.jar) &
+sleep 3
+(/bin/burpsuite)
+
+echo "[✓] Đã hoàn tất cài đặt Burp Suite Professional!"
