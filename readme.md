@@ -1,1 +1,1 @@
-Run script with root shell
+sudo ./installer.sh
