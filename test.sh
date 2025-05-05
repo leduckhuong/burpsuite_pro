@@ -1,11 +1,9 @@
 #!/bin/bash
 
 # Tạo file burpsuite.desktop
-mkdir -p ~/.local/share/applications
-touch ~/.local/share/applications/burpsuite.desktop
 
 echo "[*] Tạo shortcut Burp Suite..."
-cat <<EOF > ~/.local/share/applications/burpsuite.desktop
+sudo cat <<EOF > ~/.local/share/applications/burpsuite.desktop
 [Desktop Entry]
 Version=1.0
 Name=Burp Suite Professional
@@ -17,5 +15,5 @@ Type=Application
 Categories=Development;Security;
 EOF
 
-chmod +x ~/.local/share/applications/burpsuite.desktop
-xdg-desktop-menu forceupdate
+sudo chmod +x ~/.local/share/applications/burpsuite.desktop
+sudo xdg-desktop-menu forceupdate
