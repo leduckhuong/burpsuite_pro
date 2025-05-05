@@ -60,4 +60,5 @@ echo "[*] Khởi động keygen và Burp Suite..."
 sleep 3
 (/bin/burpsuite)
 
+
 echo "[✓] Đã hoàn tất cài đặt Burp Suite Professional!"

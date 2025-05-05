@@ -1,8 +1,11 @@
 #!/bin/bash
 
 # Tạo file burpsuite.desktop
+sudo mkdir -p ~/.local/share/applications
+sudo touch ~/.local/share/applications/burpsuite.desktop
 
 echo "[*] Tạo shortcut Burp Suite..."
+
 sudo cat <<EOF > ~/.local/share/applications/burpsuite.desktop
 [Desktop Entry]
 Version=1.0
