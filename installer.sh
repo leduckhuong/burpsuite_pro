@@ -1,9 +1,8 @@
 #!/bin/bash
 
 # Kiểm tra quyền root
-# Kiểm tra nếu không phải đang trong môi trường root shell (sudo su)
-if [[ $(id -un) != "root" || -n "$SUDO_USER" ]]; then
-    echo "[!] Vui lòng chạy script từ môi trường root shell (dùng 'sudo su' rồi chạy script)"
+if [[ $EUID -ne 0 ]]; then
+    echo "[!] Vui lòng chạy script với quyền root (sudo)"
     exit 1
 fi
 
